@@ -1,61 +1,73 @@
-// Game state
-const state = {
-    player: 0,
-    computer: 0,
-    round: 1,
-    totalRounds: 5,
-    active: true,
-    trashTalk: "You Suck! Haha.Loser! Suck.Loser!"
+const state = { 
+    player: 0, 
+    computer: 0, 
+    round: 1, 
+    totalRounds: 5, 
+    active: true, 
+    trashTalk: "You Suck! Haha.Loser! Suck.Loser!" 
 };
 
-// DOM elements
-const elements = {
-    startScreen: document.getElementById('start-screen'),
-    gameScreen: document.getElementById('game-screen'),
-    playerScore: document.getElementById('player-score'),
-    computerScore: document.getElementById('computer-score'),
-    currentRound: document.getElementById('current-round'),
-    playerChoice: document.getElementById('player-choice'),
-    computerChoice: document.getElementById('computer-choice'),
-    resultText: document.querySelector('.result-text'),
-    lastUsed: document.querySelector('.last-used'),
-    modal: document.getElementById('trash-talk-modal')
-};
+const el = {};
 
-// Initialize game
 function init() {
-    document.getElementById('start-btn').addEventListener('click', startGame);
-    document.getElementById('restart-btn').addEventListener('click', resetGame);
-    document.getElementById('home-btn').addEventListener('click', goHome);
+    // Cache DOM elements
+    ['start-screen','game-screen','player-score','computer-score','current-round',
+     'player-choice','computer-choice','start-btn','restart-btn','home-btn',
+     'trash-talk-btn','trash-talk-modal','custom-trash','send-trash','total-rounds',
+     'mode-5','mode-7'].forEach(id => 
+        el[id] = document.getElementById(id));
     
-    document.querySelectorAll('.choice-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => handleChoice(e.target.closest('.choice-btn').dataset.choice));
-    });
+    el.resultText = document.querySelector('.result-text');
+    el.lastUsed = document.querySelector('.last-used');
+    
+    // Event listeners
+    el['start-btn'].addEventListener('click', startGame);
+    el['restart-btn'].addEventListener('click', resetGame);
+    el['home-btn'].addEventListener('click', goHome);
+    
+    // Mode selection
+    el['mode-5'].addEventListener('click', () => setGameMode(5));
+    el['mode-7'].addEventListener('click', () => setGameMode(7));
+    
+    document.querySelectorAll('.choice-btn').forEach(btn => 
+        btn.addEventListener('click', (e) => {
+            if (!state.active) return;
+            const choice = e.target.closest('.choice-btn').dataset.choice;
+            handleChoice(choice);
+        }));
     
     // Trash talk
-    document.getElementById('trash-talk-btn').addEventListener('click', () => elements.modal.classList.add('active'));
+    el['trash-talk-btn'].addEventListener('click', () => el['trash-talk-modal'].classList.add('active'));
     document.querySelector('.close-btn').addEventListener('click', closeModal);
-    
-    document.querySelectorAll('.trash-option').forEach(option => {
-        option.addEventListener('click', () => selectTrashTalk(option.textContent));
-    });
-    
-    document.getElementById('send-trash').addEventListener('click', sendCustomTrashTalk);
-    window.addEventListener('click', (e) => e.target === elements.modal && closeModal());
+    document.querySelectorAll('.trash-option').forEach(opt => 
+        opt.addEventListener('click', () => updateTrashTalk(opt.textContent)));
+    el['send-trash'].addEventListener('click', sendCustomTrashTalk);
+    window.addEventListener('click', (e) => e.target === el['trash-talk-modal'] && closeModal());
     
     updateScores();
+    setGameMode(5); // Default to 5 rounds
 }
 
-// Game functions
 function startGame() {
-    elements.startScreen.classList.remove('active');
-    elements.gameScreen.classList.add('active');
+    el['start-screen'].classList.remove('active');
+    el['game-screen'].classList.add('active');
     resetGame();
 }
 
 function goHome() {
-    elements.gameScreen.classList.remove('active');
-    elements.startScreen.classList.add('active');
+    el['game-screen'].classList.remove('active');
+    el['start-screen'].classList.add('active');
+}
+
+function setGameMode(rounds) {
+    state.totalRounds = rounds;
+    el['total-rounds'].textContent = rounds;
+    
+    // Update active mode button
+    el['mode-5'].classList.toggle('active', rounds === 5);
+    el['mode-7'].classList.toggle('active', rounds === 7);
+    
+    resetGame();
 }
 
 function handleChoice(playerChoice) {
@@ -64,7 +76,7 @@ function handleChoice(playerChoice) {
     const computerChoice = getComputerChoice();
     updateChoices(playerChoice, computerChoice);
     
-    const winner = getWinner(playerChoice, computerChoice);
+    const winner = determineWinner(playerChoice, computerChoice);
     updateGame(winner);
     showResult(winner);
     
@@ -72,40 +84,58 @@ function handleChoice(playerChoice) {
 }
 
 function getComputerChoice() {
-    return ['rock', 'paper', 'scissors'][Math.floor(Math.random() * 3)];
+    const choices = ['rock', 'paper', 'scissors'];
+    const randomIndex = Math.floor(Math.random() * choices.length);
+    return choices[randomIndex];
 }
 
-function getWinner(player, computer) {
+function determineWinner(player, computer) {
     if (player === computer) return 'draw';
-    if ((player === 'rock' && computer === 'scissors') ||
+    
+    if (
+        (player === 'rock' && computer === 'scissors') ||
         (player === 'paper' && computer === 'rock') ||
-        (player === 'scissors' && computer === 'paper')) return 'player';
+        (player === 'scissors' && computer === 'paper')
+    ) {
+        return 'player';
+    }
+    
     return 'computer';
 }
 
 function updateChoices(player, computer) {
-    elements.playerChoice.innerHTML = `<img src="public/icons/${player}.png" alt="${player}">`;
-    elements.computerChoice.innerHTML = `<img src="public/icons/${computer}.png" alt="${computer}">`;
+    el.playerChoice.innerHTML = `<img src="public/icons/${player}.png" alt="${player}">`;
+    el.computerChoice.innerHTML = `<img src="public/icons/${computer}.png" alt="${computer}">`;
     
-    elements.playerChoice.style.animation = 'bounceIn 0.5s ease';
-    setTimeout(() => elements.playerChoice.style.animation = '', 500);
+    el.playerChoice.style.animation = 'bounceIn 0.5s ease';
+    setTimeout(() => el.playerChoice.style.animation = '', 500);
 }
 
 function updateGame(winner) {
-    if (winner === 'player') state.player++;
-    if (winner === 'computer') state.computer++;
+    if (winner === 'player') {
+        state.player++;
+        // Add score animation
+        el.playerScore.style.transform = 'scale(1.2)';
+        setTimeout(() => el.playerScore.style.transform = 'scale(1)', 300);
+    } else if (winner === 'computer') {
+        state.computer++;
+        // Add score animation
+        el.computerScore.style.transform = 'scale(1.2)';
+        setTimeout(() => el.computerScore.style.transform = 'scale(1)', 300);
+    }
     
     updateScores();
     
+    // Move to next round if not a draw
     if (winner !== 'draw') {
         state.round++;
-        elements.currentRound.textContent = state.round;
+        el.currentRound.textContent = state.round;
     }
 }
 
 function updateScores() {
-    elements.playerScore.textContent = state.player;
-    elements.computerScore.textContent = state.computer;
+    el.playerScore.textContent = state.player;
+    el.computerScore.textContent = state.computer;
 }
 
 function showResult(winner) {
@@ -121,10 +151,12 @@ function showResult(winner) {
         draw: 'draw'
     };
     
-    elements.resultText.textContent = messages[winner];
-    elements.resultText.className = `result-text ${colors[winner]}`;
+    el.resultText.textContent = messages[winner];
+    el.resultText.className = `result-text ${colors[winner]}`;
     
-    if (winner === 'computer') showRandomTrashTalk();
+    if (winner === 'computer') {
+        showRandomTrashTalk();
+    }
 }
 
 function showRandomTrashTalk() {
@@ -133,53 +165,72 @@ function showRandomTrashTalk() {
     
     const popup = document.createElement('div');
     popup.textContent = randomMsg;
-    popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#EC4899;color:white;padding:20px 30px;border-radius:15px;font-weight:bold;z-index:1000;animation:bounceIn 0.5s ease';
+    popup.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #EC4899;
+        color: white;
+        padding: 20px 30px;
+        border-radius: 15px;
+        font-weight: bold;
+        z-index: 1000;
+        animation: bounceIn 0.5s ease;
+    `;
     
     document.body.appendChild(popup);
     setTimeout(() => document.body.removeChild(popup), 3000);
 }
 
 function checkGameEnd() {
-    const winningScore = Math.ceil(state.totalRounds / 2);
+    const maxRounds = state.totalRounds;
+    const playerScore = state.player;
+    const computerScore = state.computer;
     
-    if (state.player >= winningScore || state.computer >= winningScore || state.round > state.totalRounds) {
+    // Check if any player has reached the winning score
+    const winningScore = Math.ceil(maxRounds / 2);
+    
+    if (playerScore >= winningScore || computerScore >= winningScore || state.round > maxRounds) {
         state.active = false;
         
-        let finalMsg = state.player > state.computer ? 
-            'Congratulations! You won the game! 🏆' :
-            state.computer > state.player ? 
-            'Game Over! Computer won the game. 🤖' : 
-            "It's a tie game! ⚖️";
+        let finalMessage = '';
+        if (playerScore > computerScore) {
+            finalMessage = 'Congratulations! You won the game! 🏆';
+        } else if (computerScore > playerScore) {
+            finalMessage = 'Game Over! Computer won the game. 🤖';
+        } else {
+            finalMessage = "It's a tie game! ⚖️";
+        }
         
+        // Show final result after a delay
         setTimeout(() => {
-            elements.resultText.textContent = finalMsg;
-            elements.resultText.className = `result-text ${state.player > state.computer ? 'win' : state.computer > state.player ? 'lose' : 'draw'}`;
+            el.resultText.textContent = finalMessage;
+            el.resultText.className = `result-text ${playerScore > computerScore ? 'win' : computerScore > playerScore ? 'lose' : 'draw'}`;
         }, 1500);
     }
 }
 
-// Trash talk functions
-function selectTrashTalk(msg) {
+function updateTrashTalk(msg) {
     state.trashTalk = msg;
-    elements.lastUsed.textContent = msg;
+    el.lastUsed.textContent = msg;
     closeModal();
 }
 
 function sendCustomTrashTalk() {
-    const msg = document.getElementById('custom-trash').value.trim();
+    const msg = el['custom-trash'].value.trim();
     if (msg) {
         state.trashTalk = msg;
-        elements.lastUsed.textContent = msg;
-        document.getElementById('custom-trash').value = '';
+        el.lastUsed.textContent = msg;
+        el['custom-trash'].value = '';
         closeModal();
     }
 }
 
 function closeModal() {
-    elements.modal.classList.remove('active');
+    el['trash-talk-modal'].classList.remove('active');
 }
 
-// Reset game
 function resetGame() {
     state.player = 0;
     state.computer = 0;
@@ -187,12 +238,11 @@ function resetGame() {
     state.active = true;
     
     updateScores();
-    elements.currentRound.textContent = state.round;
-    elements.playerChoice.innerHTML = '<div class="choice-placeholder">?</div>';
-    elements.computerChoice.innerHTML = '<div class="choice-placeholder">?</div>';
-    elements.resultText.textContent = 'Make your move!';
-    elements.resultText.className = 'result-text';
+    el.currentRound.textContent = state.round;
+    el.playerChoice.innerHTML = '<div class="choice-placeholder">?</div>';
+    el.computerChoice.innerHTML = '<div class="choice-placeholder">?</div>';
+    el.resultText.textContent = 'Make your move!';
+    el.resultText.className = 'result-text';
 }
 
-// Start the game
 document.addEventListener('DOMContentLoaded', init);
