@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock, Paper, Scissors</title>
+    <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+    <!-- Start Screen -->
+    <div id="start-screen" class="screen active">
+        <div class="start-container">
+            <div class="front-image">
+                <div class="placeholder-front">🎮</div>
+            </div>
+            <h1 class="game-title">Rock Paper Scissors</h1>
+            <p class="game-subtitle">Challenge the Computer!</p>
+            <button id="start-btn" class="start-btn">START THE GAME</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="game-screen" class="screen">
+        <div class="game-container">
+            <!-- Header -->
+            <header class="game-header">
+                <h1>Rock Paper Scissors</h1>
+            </header>
+
+            <!-- Score Board -->
+            <div class="score-board">
+                <div class="player-section">
+                    <div class="player-info">
+                        <div class="player-avatar">👤</div>
+                        <div class="player-name">You</div>
+                    </div>
+                    <div class="score" id="player-score">0</div>
+                </div>
+
+                <div class="vs-section">
+                    <div class="vs-text">VS</div>
+                    <div class="round-info">
+                        Round <span id="current-round">1</span>/<span id="total-rounds">5</span>
+                    </div>
+                </div>
+
+                <div class="computer-section">
+                    <div class="score" id="computer-score">0</div>
+                    <div class="computer-info">
+                        <div class="computer-name">Paul</div>
+                        <div class="computer-avatar">🤖</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Battle Area -->
+            <div class="battle-area">
+                <div class="player-choice-display">
+                    <div class="choice-label">Your Choice</div>
+                    <div id="player-choice" class="choice-display">
+                        <div class="choice-placeholder">?</div>
+                    </div>
+                </div>
+
+                <div class="vs-battle">VS</div>
+
+                <div class="computer-choice-display">
+                    <div class="choice-label">Computer</div>
+                    <div id="computer-choice" class="choice-display">
+                        <div class="choice-placeholder">?</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Message -->
+            <div id="result-message" class="result-message">
+                <div class="result-text">Make your move!</div>
+            </div>
+
+            <!-- Trash Talk Section -->
+            <div class="trash-talk-section">
+                <div class="trash-talk-header">
+                    <span>Trash talk</span>
+                    <button class="trash-talk-btn" id="trash-talk-btn">💬</button>
+                </div>
+                <div class="trash-talk-messages">
+                    <div class="message last-used">You Suck.Loser!</div>
+                </div>
+            </div>
+
+            <!-- Game Controls -->
+            <div class="game-controls">
+                <div class="choices">
+                    <button class="choice-btn" data-choice="rock">
+                        <img src="public/icons/rock.png" alt="Rock" class="choice-icon">
+                        <span>Rock</span>
+                    </button>
+                    <button class="choice-btn" data-choice="paper">
+                        <img src="public/icons/paper.png" alt="Paper" class="choice-icon">
+                        <span>Paper</span>
+                    </button>
+                    <button class="choice-btn" data-choice="scissors">
+                        <img src="public/icons/scissors.png" alt="Scissors" class="choice-icon">
+                        <span>Scissors</span>
+                    </button>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="restart-btn" class="action-btn restart">
+                        PLAY AGAIN
+                    </button>
+                    <button id="home-btn" class="action-btn home">
+                        HOME
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trash Talk Modal -->
+    <div id="trash-talk-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Trash Talk</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="trash-talk-options">
+                    <button class="trash-option">You Suck!</button>
+                    <button class="trash-option">Hahaha.Loser.</button>
+                    <button class="trash-option">You're too easy!</button>
+                    <button class="trash-option">Better luck next time!</button>
+                </div>
+                <div class="send-section">
+                    <input type="text" id="custom-trash" placeholder="Type your own trash talk...">
+                    <button id="send-trash" class="send-btn">SEND</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
