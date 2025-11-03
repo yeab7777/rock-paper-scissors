@@ -1,101 +1,144 @@
-const state = { 
-    player: 0, 
-    computer: 0, 
-    round: 1, 
-    totalRounds: 5, 
-    active: true, 
-    trashTalk: "You Suck! Haha.Loser! Suck.Loser!" 
+// Game state
+const state = {
+    playerScore: 0,
+    computerScore: 0,
+    currentRound: 1,
+    totalRounds: 5,
+    gameActive: true,
+    currentTrashTalk: "You Suck! Haha.Loser! Suck.Loser!"
 };
 
-const el = {};
+// DOM Elements
+const startScreen = document.getElementById('start-screen');
+const gameScreen = document.getElementById('game-screen');
+const startBtn = document.getElementById('start-btn');
+const playerScoreElement = document.getElementById('player-score');
+const computerScoreElement = document.getElementById('computer-score');
+const currentRoundElement = document.getElementById('current-round');
+const totalRoundsElement = document.getElementById('total-rounds');
+const playerChoiceDisplay = document.getElementById('player-choice');
+const computerChoiceDisplay = document.getElementById('computer-choice');
+const resultMessage = document.querySelector('.result-text');
+const restartButton = document.getElementById('restart-btn');
+const homeButton = document.getElementById('home-btn');
+const choiceButtons = document.querySelectorAll('.choice-btn');
+const mode5Button = document.getElementById('mode-5');
+const mode7Button = document.getElementById('mode-7');
 
-function init() {
-    // Cache DOM elements
-    ['start-screen','game-screen','player-score','computer-score','current-round',
-     'player-choice','computer-choice','start-btn','restart-btn','home-btn',
-     'trash-talk-btn','trash-talk-modal','custom-trash','send-trash','total-rounds',
-     'mode-5','mode-7'].forEach(id => 
-        el[id] = document.getElementById(id));
+// Trash talk elements
+const trashTalkBtn = document.getElementById('trash-talk-btn');
+const trashTalkModal = document.getElementById('trash-talk-modal');
+const closeModalBtn = document.querySelector('.close-btn');
+const trashOptions = document.querySelectorAll('.trash-option');
+const customTrashInput = document.getElementById('custom-trash');
+const sendTrashBtn = document.getElementById('send-trash');
+const lastUsedMessage = document.getElementById('last-used-message');
+
+// Initialize the game
+function initGame() {
+    // Set up event listeners
+    startBtn.addEventListener('click', startGame);
+    restartButton.addEventListener('click', resetGame);
+    homeButton.addEventListener('click', goHome);
     
-    el.resultText = document.querySelector('.result-text');
-    el.lastUsed = document.querySelector('.last-used');
+    choiceButtons.forEach(button => {
+        button.addEventListener('click', handlePlayerChoice);
+    });
     
-    // Event listeners
-    el['start-btn'].addEventListener('click', startGame);
-    el['restart-btn'].addEventListener('click', resetGame);
-    el['home-btn'].addEventListener('click', goHome);
+    mode5Button.addEventListener('click', () => setGameMode(5));
+    mode7Button.addEventListener('click', () => setGameMode(7));
     
-    // Mode selection
-    el['mode-5'].addEventListener('click', () => setGameMode(5));
-    el['mode-7'].addEventListener('click', () => setGameMode(7));
+    // Trash talk functionality
+    trashTalkBtn.addEventListener('click', openTrashTalkModal);
+    closeModalBtn.addEventListener('click', closeTrashTalkModal);
     
-    document.querySelectorAll('.choice-btn').forEach(btn => 
-        btn.addEventListener('click', (e) => {
-            if (!state.active) return;
-            const choice = e.target.closest('.choice-btn').dataset.choice;
-            handleChoice(choice);
-        }));
+    trashOptions.forEach(option => {
+        option.addEventListener('click', () => selectTrashTalk(option.textContent));
+    });
     
-    // Trash talk
-    el['trash-talk-btn'].addEventListener('click', () => el['trash-talk-modal'].classList.add('active'));
-    document.querySelector('.close-btn').addEventListener('click', closeModal);
-    document.querySelectorAll('.trash-option').forEach(opt => 
-        opt.addEventListener('click', () => updateTrashTalk(opt.textContent)));
-    el['send-trash'].addEventListener('click', sendCustomTrashTalk);
-    window.addEventListener('click', (e) => e.target === el['trash-talk-modal'] && closeModal());
+    sendTrashBtn.addEventListener('click', sendCustomTrashTalk);
     
-    updateScores();
-    setGameMode(5); // Default to 5 rounds
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+        if (e.target === trashTalkModal) {
+            closeTrashTalkModal();
+        }
+    });
+    
+    // Initialize UI
+    updateScoreboard();
+    setGameMode(5);
+    updateTrashTalkDisplay();
 }
 
+// Start the game
 function startGame() {
-    el['start-screen'].classList.remove('active');
-    el['game-screen'].classList.add('active');
+    startScreen.classList.remove('active');
+    gameScreen.classList.add('active');
     resetGame();
 }
 
+// Go back to home screen
 function goHome() {
-    el['game-screen'].classList.remove('active');
-    el['start-screen'].classList.add('active');
+    gameScreen.classList.remove('active');
+    startScreen.classList.add('active');
 }
 
+// Set game mode
 function setGameMode(rounds) {
     state.totalRounds = rounds;
-    el['total-rounds'].textContent = rounds;
+    totalRoundsElement.textContent = rounds;
     
     // Update active mode button
-    el['mode-5'].classList.toggle('active', rounds === 5);
-    el['mode-7'].classList.toggle('active', rounds === 7);
+    mode5Button.classList.toggle('active', rounds === 5);
+    mode7Button.classList.toggle('active', rounds === 7);
     
     resetGame();
 }
 
-function handleChoice(playerChoice) {
-    if (!state.active) return;
+// Handle player's choice
+function handlePlayerChoice(event) {
+    if (!state.gameActive) return;
     
+    const playerChoice = event.currentTarget.getAttribute('data-choice');
     const computerChoice = getComputerChoice();
-    updateChoices(playerChoice, computerChoice);
     
+    // Update displays
+    updateChoiceDisplays(playerChoice, computerChoice);
+    
+    // Determine winner
     const winner = determineWinner(playerChoice, computerChoice);
-    updateGame(winner);
-    showResult(winner);
     
-    checkGameEnd();
+    // Update scores and UI
+    updateScores(winner);
+    displayResult(winner);
+    
+    // Show trash talk when computer wins
+    if (winner === 'computer') {
+        showRandomTrashTalk();
+    }
+    
+    // Check if game is over
+    checkGameOver();
 }
 
+// Get computer's random choice
 function getComputerChoice() {
     const choices = ['rock', 'paper', 'scissors'];
     const randomIndex = Math.floor(Math.random() * choices.length);
     return choices[randomIndex];
 }
 
-function determineWinner(player, computer) {
-    if (player === computer) return 'draw';
+// Determine the winner of a round
+function determineWinner(playerChoice, computerChoice) {
+    if (playerChoice === computerChoice) {
+        return 'draw';
+    }
     
     if (
-        (player === 'rock' && computer === 'scissors') ||
-        (player === 'paper' && computer === 'rock') ||
-        (player === 'scissors' && computer === 'paper')
+        (playerChoice === 'rock' && computerChoice === 'scissors') ||
+        (playerChoice === 'paper' && computerChoice === 'rock') ||
+        (playerChoice === 'scissors' && computerChoice === 'paper')
     ) {
         return 'player';
     }
@@ -103,69 +146,106 @@ function determineWinner(player, computer) {
     return 'computer';
 }
 
-function updateChoices(player, computer) {
-    el.playerChoice.innerHTML = `<img src="public/icons/${player}.png" alt="${player}">`;
-    el.computerChoice.innerHTML = `<img src="public/icons/${computer}.png" alt="${computer}">`;
+// Update choice displays
+function updateChoiceDisplays(playerChoice, computerChoice) {
+    // Clear displays
+    playerChoiceDisplay.innerHTML = '';
+    computerChoiceDisplay.innerHTML = '';
     
-    el.playerChoice.style.animation = 'bounceIn 0.5s ease';
-    setTimeout(() => el.playerChoice.style.animation = '', 500);
+    // Create player choice element
+    const playerImg = document.createElement('img');
+    playerImg.src = `public/icons/${playerChoice}.png`;
+    playerImg.alt = playerChoice;
+    playerImg.className = 'choice-icon';
+    playerChoiceDisplay.appendChild(playerImg);
+    
+    // Add animation
+    playerChoiceDisplay.style.animation = 'bounceIn 0.5s ease';
+    
+    // Update computer choice with a delay
+    setTimeout(() => {
+        const computerImg = document.createElement('img');
+        computerImg.src = `public/icons/${computerChoice}.png`;
+        computerImg.alt = computerChoice;
+        computerImg.className = 'choice-icon';
+        computerChoiceDisplay.appendChild(computerImg);
+        
+        // Add animation
+        computerChoiceDisplay.style.animation = 'bounceIn 0.5s ease';
+        
+        // Remove animation after it completes
+        setTimeout(() => {
+            playerChoiceDisplay.style.animation = '';
+            computerChoiceDisplay.style.animation = '';
+        }, 500);
+    }, 500);
 }
 
-function updateGame(winner) {
+// Update scores based on winner
+function updateScores(winner) {
     if (winner === 'player') {
-        state.player++;
-        // Add score animation
-        el.playerScore.style.transform = 'scale(1.2)';
-        setTimeout(() => el.playerScore.style.transform = 'scale(1)', 300);
+        state.playerScore++;
     } else if (winner === 'computer') {
-        state.computer++;
-        // Add score animation
-        el.computerScore.style.transform = 'scale(1.2)';
-        setTimeout(() => el.computerScore.style.transform = 'scale(1)', 300);
+        state.computerScore++;
     }
     
-    updateScores();
+    updateScoreboard();
     
     // Move to next round if not a draw
     if (winner !== 'draw') {
-        state.round++;
-        el.currentRound.textContent = state.round;
+        state.currentRound++;
+        currentRoundElement.textContent = state.currentRound;
     }
 }
 
-function updateScores() {
-    el.playerScore.textContent = state.player;
-    el.computerScore.textContent = state.computer;
+// Update the scoreboard display
+function updateScoreboard() {
+    playerScoreElement.textContent = state.playerScore;
+    computerScoreElement.textContent = state.computerScore;
 }
 
-function showResult(winner) {
-    const messages = {
-        player: 'You Win! 🎉',
-        computer: 'You Lose! 💥',
-        draw: "It's a Draw! 🤝"
-    };
+// Display the result with animation
+function displayResult(winner) {
+    // Clear previous result classes
+    resultMessage.className = 'result-text';
     
-    const colors = {
-        player: 'win',
-        computer: 'lose', 
-        draw: 'draw'
-    };
+    let message = '';
     
-    el.resultText.textContent = messages[winner];
-    el.resultText.className = `result-text ${colors[winner]}`;
-    
-    if (winner === 'computer') {
-        showRandomTrashTalk();
+    switch (winner) {
+        case 'player':
+            message = 'You Win! 🎉';
+            resultMessage.classList.add('win');
+            break;
+        case 'computer':
+            message = 'You Lose! 💥';
+            resultMessage.classList.add('lose');
+            break;
+        case 'draw':
+            message = "It's a Draw! 🤝";
+            resultMessage.classList.add('draw');
+            break;
     }
+    
+    resultMessage.textContent = message;
 }
 
+// Show random trash talk when computer wins
 function showRandomTrashTalk() {
-    const messages = ["You Suck!", "Hahaha.Loser.", "Better luck next time!", state.trashTalk];
-    const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+    const messages = [
+        "You Suck!",
+        "Hahaha.Loser.",
+        "Better luck next time!",
+        "Too easy!",
+        "You're no match for me!",
+        state.currentTrashTalk
+    ];
     
-    const popup = document.createElement('div');
-    popup.textContent = randomMsg;
-    popup.style.cssText = `
+    const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+    
+    // Create a temporary trash talk display
+    const tempTrash = document.createElement('div');
+    tempTrash.textContent = randomMessage;
+    tempTrash.style.cssText = `
         position: fixed;
         top: 50%;
         left: 50%;
@@ -175,24 +255,30 @@ function showRandomTrashTalk() {
         padding: 20px 30px;
         border-radius: 15px;
         font-weight: bold;
+        font-size: 1.2rem;
         z-index: 1000;
         animation: bounceIn 0.5s ease;
     `;
     
-    document.body.appendChild(popup);
-    setTimeout(() => document.body.removeChild(popup), 3000);
+    document.body.appendChild(tempTrash);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        document.body.removeChild(tempTrash);
+    }, 3000);
 }
 
-function checkGameEnd() {
+// Check if the game is over
+function checkGameOver() {
     const maxRounds = state.totalRounds;
-    const playerScore = state.player;
-    const computerScore = state.computer;
+    const playerScore = state.playerScore;
+    const computerScore = state.computerScore;
     
     // Check if any player has reached the winning score
     const winningScore = Math.ceil(maxRounds / 2);
     
-    if (playerScore >= winningScore || computerScore >= winningScore || state.round > maxRounds) {
-        state.active = false;
+    if (playerScore >= winningScore || computerScore >= winningScore || state.currentRound > maxRounds) {
+        state.gameActive = false;
         
         let finalMessage = '';
         if (playerScore > computerScore) {
@@ -205,44 +291,63 @@ function checkGameEnd() {
         
         // Show final result after a delay
         setTimeout(() => {
-            el.resultText.textContent = finalMessage;
-            el.resultText.className = `result-text ${playerScore > computerScore ? 'win' : computerScore > playerScore ? 'lose' : 'draw'}`;
+            resultMessage.textContent = finalMessage;
+            resultMessage.className = 'result-text';
+            if (playerScore > computerScore) {
+                resultMessage.classList.add('win');
+            } else if (computerScore > playerScore) {
+                resultMessage.classList.add('lose');
+            } else {
+                resultMessage.classList.add('draw');
+            }
         }, 1500);
     }
 }
 
-function updateTrashTalk(msg) {
-    state.trashTalk = msg;
-    el.lastUsed.textContent = msg;
-    closeModal();
+// Trash talk functionality
+function openTrashTalkModal() {
+    trashTalkModal.classList.add('active');
+}
+
+function closeTrashTalkModal() {
+    trashTalkModal.classList.remove('active');
+}
+
+function selectTrashTalk(message) {
+    state.currentTrashTalk = message;
+    updateTrashTalkDisplay();
+    closeTrashTalkModal();
 }
 
 function sendCustomTrashTalk() {
-    const msg = el['custom-trash'].value.trim();
-    if (msg) {
-        state.trashTalk = msg;
-        el.lastUsed.textContent = msg;
-        el['custom-trash'].value = '';
-        closeModal();
+    const message = customTrashInput.value.trim();
+    if (message) {
+        state.currentTrashTalk = message;
+        updateTrashTalkDisplay();
+        customTrashInput.value = '';
+        closeTrashTalkModal();
     }
 }
 
-function closeModal() {
-    el['trash-talk-modal'].classList.remove('active');
+function updateTrashTalkDisplay() {
+    lastUsedMessage.textContent = state.currentTrashTalk;
 }
 
+// Reset the game
 function resetGame() {
-    state.player = 0;
-    state.computer = 0;
-    state.round = 1;
-    state.active = true;
+    state.playerScore = 0;
+    state.computerScore = 0;
+    state.currentRound = 1;
+    state.gameActive = true;
     
-    updateScores();
-    el.currentRound.textContent = state.round;
-    el.playerChoice.innerHTML = '<div class="choice-placeholder">?</div>';
-    el.computerChoice.innerHTML = '<div class="choice-placeholder">?</div>';
-    el.resultText.textContent = 'Make your move!';
-    el.resultText.className = 'result-text';
+    // Reset UI
+    updateScoreboard();
+    currentRoundElement.textContent = state.currentRound;
+    playerChoiceDisplay.innerHTML = '<div class="choice-placeholder">?</div>';
+    computerChoiceDisplay.innerHTML = '<div class="choice-placeholder">?</div>';
+    resultMessage.textContent = 'Make your move!';
+    resultMessage.className = 'result-text';
 }
 
-document.addEventListener('DOMContentLoaded', init);
+// Initialize the game when the page loads
+document.addEventListener('DOMContentLoaded', initGame);
